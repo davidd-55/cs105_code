@@ -1,0 +1,185 @@
+<meta charset="utf-8" lang="en">
+
+**Assignment 02: Data Representation**
+
+The purpose of this assignment is to give you familiarity with bit-level representations of integers and floating point numbers and with various operations performed on these data types. You will accomplish the goal by solving a series of programming *puzzles*. Even though many of the puzzles are quite artificial, you will find yourself thinking much more about bits in working your way through them.
+
+You must work in a group of two people in solving the problems; partners will be assigned for this assignment. You should complete this assignment using pair programming, and you and your partner should submit one solution. *I recommend that you and your partner brainstorm before coding!*
+
+# Learning Goals
+
+- Learn how integers and floats are represented in memory
+- Learn how to use bitwise operators in C
+
+# Grading Walk-Throughs
+
+This assignment will be graded as pass/needs-revisions by a TA. To pass the assignment, you must
+
+1. Complete the assignment and submit your work to gradescope.
+    - You should start this assignment in class on the day shown on the calendar.
+    - **Complete the assignment as early as possible**.
+
+2. Schedule a time to meet with a TA prior to the deadline.
+    - You must book a time to meet with a TA
+    - Sign-up on the Google Sheet **with at least 36 hours of notice**.
+    - Contact your TA on Slack after signing-up.
+    - All partners must meet with the TA. If you can't all make it at the same time, then each of you needs to schedule a time to meet with the TAs.
+
+3. Walk the TA through your solutions prior to the deadline.
+    - Walk-throughs should take no more than 20 minutes.
+    - You should be well prepared to walk a TA through your answers.
+    - You may not make any significant corrections during the walk-through. You should plan on making corrections afterward and scheduling a new walk-through time. Mistakes are expected--nobody is perfect.
+    - You must be prepared to explain your answers and justify your assumptions. TAs do not need to lead you to the correct answer during a walk-through--this is best left to a mentor session.
+
+4. The TA will then either
+    - mark your assignment as "pass" on gradescope, or
+    - mark your assignment as "needs-revisions" and inform you that you have some corrections to make.
+
+5. If corrections are needed, then you will need to complete them and then schedule a new time to meet with the TA.
+    - You will ideally complete any needed revisions by the end of the day the following Monday
+
+If you have concerns about the grading walk-through, you can meet with me after you've first met with a TA.
+
+# Overview
+
+The materials for the data lab are available on the course web page and on the course VM. I strongly recommend that you complete this assignment on the VM, as this will ensure that you get all the points you earned when I grade it.
+
+To start, you should
+
+- connect to the Pomona VPN (if needed), 
+- `ssh` into `itbdcv-lnx04p.campus.pomona.edu`, and 
+- then grab and extract the starter code.
+
+Here is an example how doing so (**you can copy and past from the above animation!**):
+
+<script id="asciicast-464909" src="https://asciinema.org/a/464909.js" async></script>
+
+If you do not see an animation above this line (or if you see the animation but you don't see the progress bar), you will need to refresh the page (sometimes more than once). Or you can go directly to the player: https://asciinema.org/a/464909
+
+Begin by opening the file in an editor and **typing both your names** in comments at the top of the `bits.c` file. Do this right away!!
+
+The `bits.c` file contains function declarations for 12 programming puzzles. Each function heading tells you what operations are allowed. Some functions, for example, require you to use only *straightline* code (no loops or conditionals) and a limited number of C arithmetic and logical operators. Further, you are not allowed to use any constants longer than 8 bits.
+
+This assignment is heavily inspired by work from R. Bryant and D. O'Hallaron.
+
+# Examples
+
+Here are two examples representative of what you'll find in `bits.c`.
+
+~~~c linenumbers
+/*
+ * pow2plus1 - returns 2^x + 1, where 0 <= x <= 31
+ *   Example: pow2plus1(7) = 129
+ *   Legal ops: << +
+ *   Max ops: 4
+ *   Instructor solution uses 2 ops
+ */
+int pow2plus1(int x) {
+  /* TODO: implement this function */
+  return -1;
+}
+
+/*
+ * pow2plus4 - returns 2^x + 4, where 0 <= x <= 31
+ *   Example: pow2plus4(7) = 132
+ *   Legal ops: << +
+ *   Max ops: 4
+ *   Instructor solution uses 2 ops
+ */
+int pow2plus4(int x) {
+  /* TODO: implement this function */
+  return -1;
+}
+~~~
+
+And here are the solutions.
+
+~~~c linenumbers
+/*
+ * pow2plus1 - returns 2^x + 1, where 0 <= x <= 31
+ *   Example: pow2plus1(7) = 129
+ *   Legal ops: << +
+ *   Max ops: 4
+ *   Instructor solution uses 2 ops
+ */
+int pow2plus1(int x) {
+  /* Exploit ability of shifts to compute powers of 2 */
+  return (1 << x) + 1;
+}
+
+/*
+ * pow2plus4 - returns 2^x + 4, where 0 <= x <= 31
+ *   Example: pow2plus4(7) = 132
+ *   Legal ops: << +
+ *   Max ops: 4
+ *   Instructor solution uses 2 ops
+ */
+int pow2plus4(int x) {
+  /* Exploit ability of shifts to compute powers of 2 */
+  int result = (1 << x);
+  /* Now add four to the result */
+  result += 4;
+  return result;
+}
+~~~
+
+
+# Tips and Tricks
+
+My number one tip is to take the given examples and write them out on paper in binary. You should even upload your hand drawn pictures on gradescope--this will help you and your TA during your grading walk-throughs.
+
+- `int bitAnd(int x, int y)`
+	+ [De Morgan's laws - Wikipedia](https://en.wikipedia.org/wiki/De_Morgan's_laws "De Morgan's laws - Wikipedia")
+
+- `int bitXor(int x, int y)`
+	+ [XOR gate circuit (Section XOR gate using NAND gate)](https://electronicsphysics.com/xor-gate-diagram-using-only-nand-or-nor-gate/ "XOR gate circuit diagram using only NAND or NOR gate - edumir-Physics")
+	+ Hint: a "NAND" gate is an `&` operation followed by a `~` operation
+
+- `int isNotEqual(int x, int y)`
+	+ How could you check if all bits are the same?
+
+- `int copyLSB(int x)`
+	+ Which operations "fill" all bits with the same value?
+
+- `int ternary(int x, int y, int z)`
+	+ Can you convert `x` into a "mask" of all ones and all zeros?
+
+- `int bang(int x)`
+	+ Adding `1` to a true value has a different affect than adding `1` to a false value.
+
+- `int tmax(void)`
+	+ Can you get all ones and then flip the sign bit?
+
+- `int isNonNegative(int x)`
+	+ Can you isolate the sign bit?
+
+- `int addOK(int x, int y)`
+	+ How large do the inputs need to be to cause an overflow?
+
+- `int isPower2(int x)`
+	+ A power of 2 has only a single `1`. What about a number one less than a power of 2?
+
+- `unsigned float_neg(unsigned uf)`
+	+ [Single-precision floating-point format - Wikipedia](https://en.wikipedia.org/wiki/Single-precision_floating-point_format "Single-precision floating-point format - Wikipedia")
+  + [NaN - Wikipedia](https://en.wikipedia.org/wiki/NaN#Floating_point "NaN - Wikipedia") 
+
+- `int float_f2i(unsigned uf)`
+  + You can break `uf` into the sign, exponent, and mantissa, and then decide what to return based on these values.
+	+ I'll give more hints on this one if you ask in class next week.
+
+
+# Submitting Your Assignment
+
+You will submit your code and/or responses on gradescope. **Only one partner should submit.** The submitter will add the other partner through the gradescope interface.
+
+To pass the autograder (if one exists for this assignment), your output must exactly match the expected output. Your program output should be similar to the example execution above, and the autograder on gradescope will show you the correct output if yours is not formatted properly. You can use [text-compare](https://text-compare.com/) to compare your output to the expected output and that should give you an idea if you have a misspelled word or extra space (or if I do).
+
+Additional details for using gradescope can be found here:
+
+- [Submitting an Assignment](https://help.gradescope.com/article/ccbpppziu9-student-submit-work)
+- [Adding Group Members](https://help.gradescope.com/article/m5qz2xsnjy-student-add-group-members)
+- [gradescope Student Help Center](https://help.gradescope.com/category/cyk4ij2dwi-student-workflow)
+
+
+
+<!-- Markdeep: --><script>window.markdeepOptions = {tocStyle: 'long'};</script><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
