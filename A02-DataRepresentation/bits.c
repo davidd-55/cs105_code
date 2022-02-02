@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 /*
- * PARTNER 1
- * PARTNER 2
+ * Roei Cohen
+ * David D'Attile
  */
 
 /*
@@ -25,7 +25,7 @@ int bitAnd(int x, int y) {
  */
 int bitXor(int x, int y) {
   int gate = ~(x&y);
-  return ~(~(x&gate)&~(gate&y));
+  return ~( ~(x & gate) & ~(gate & y) );
 }
 
 /*
@@ -37,7 +37,6 @@ int bitXor(int x, int y) {
  */
 // can we combine logical operators and bitwise operators in the same function ?
 int isNotEqual(int x, int y) {
-  /* TODO: implement this function */
   return !!(x^y);
 }
 
@@ -49,8 +48,8 @@ int isNotEqual(int x, int y) {
  *   Instructor solution uses 2 ops
  */
 int copyLSB(int x) {
-  /* TODO: implement this function */
-  return -1;
+  // left shift LSB, right shift to copy it
+  return x << 31 >> 31;
 }
 
 /*
@@ -61,8 +60,7 @@ int copyLSB(int x) {
  *   Instructor solution uses 7 ops
  */
 int ternary(int x, int y, int z) {
-  /* TODO: implement this function */
-  return -1;
+  return (~copyLSB(!x) & y) ^ (copyLSB(!x) & z);
 }
 
 /*
@@ -73,8 +71,10 @@ int ternary(int x, int y, int z) {
  *   Instructor solution uses 6 ops
  */
 int bang(int x) {
-  /* TODO: implement this function */
-  return -1;
+  // 0 has unique property of 2's comp. also being zero 
+  // 0 xor (~0 + 1) = 0; shight right 31; add 1 equals 1
+  // anything else x: x xor (~x + 1) = 1...; shift right 31 yields 1...1; add 1 equals 0
+  return ((x ^ (~x + 1)) >> 31) + 1;
 }
 
 /*
@@ -84,8 +84,7 @@ int bang(int x) {
  *   Instructor solution uses 3 ops
  */
 int tmax(void) {
-  /* TODO: implement this function */
-  return -1;
+  return ~(1 << 31) ;
 }
 
 /*
@@ -96,8 +95,7 @@ int tmax(void) {
  *   Instructor solution uses 2 ops
  */
 int isNonNegative(int x) {
-  /* TODO: implement this function */
-  return -1;
+  return !(x >> 31);
 }
 
 /*
@@ -109,8 +107,14 @@ int isNonNegative(int x) {
  *   Instructor solution uses 11 ops
  */
 int addOK(int x, int y) {
-  /* TODO: implement this function */
-  return -1;
+  // bit shift MSB from left to right
+  int xbit = x >> 31;
+  int ybit = y >> 31;
+  int addbit = (x + y) >> 31;
+
+  // x and y have diff signs: always 1
+  // x and y have same sign: 1 iff addbit has same sign
+  return !((xbit ^ addbit) & (ybit ^ addbit));
 }
 
 /*
@@ -122,8 +126,11 @@ int addOK(int x, int y) {
  *   Instructor solution uses 10 ops
  */
 int isPower2(int x) {
-  /* TODO: implement this function */
-  return -1;
+  // power 2 is only 1 bit; no leading bit is 1
+  // !!x: if x = 0 returns 0
+  // x + ~1 + 1 is equiv. to x - 1
+  // x & (x - 1) if x is pwr of 2 is 0; nonzero otherwise
+  return !!x & !(x & (x + ~1 + 1));
 }
 
 /*
@@ -139,8 +146,16 @@ int isPower2(int x) {
  *   Instructor solution uses 5 ops
  */
 unsigned float_neg(unsigned uf) {
-  /* TODO: implement this function */
-  return -1;
+  // bit shift exp byte right; mask with 0xFF (255; ...0011111111)
+  unsigned uf_exp = (uf >> 22) & 0xFF;
+  
+  // check if uf_exp equals 0xFF; if so NaN
+  if (uf_exp == 0xFF) {
+    return uf;
+  }
+
+  // return sign flip by uf xor 100...0
+  return uf ^ (1 << 31);
 }
 
 /*
@@ -157,11 +172,29 @@ unsigned float_neg(unsigned uf) {
  */
 int float_f2i(unsigned uf) {
   /* TODO: implement this function */
+  // isolate important vals with masking
+  unsigned sign_bit = (uf >> 31) & 0x1;
+  unsigned exp_bits = (1 >> 22) & 0xFF;
+  unsigned frac_bits = uf & 0x7FFFFF;
+
+  
+  
   return -1;
 }
 
 int main() {
-  int result = isNotEqual(4,5);
-  printf("%d", result);
+  // printf("%d\n", bang(-0));
+  // printf("%d\n", bang(0));
+  // printf("%d\n", bang(1));
+  // printf("%d\n", bang(-5));
+  // printf("%d\n", bang(43));
+
+  printf("%u\n", float_neg(0)); // yields 2147483648
+  printf("%u\n", float_neg(2147483648)); // yields 0
+  printf("%u\n", float_neg(2147483652)); // yields 4
+  printf("%u\n", float_neg(2147483647)); // NaN; yields 2147483647
+  printf("%u\n", float_neg(1069547520)); // NaN; yields 1069547520 (011111111000...)
+  
+
   return 0;
 }
