@@ -146,15 +146,19 @@ int isPower2(int x) {
  *   Instructor solution uses 5 ops
  */
 unsigned float_neg(unsigned uf) {
-  // bit shift exp byte right; mask with 0xFF (255; ...0011111111)
-  unsigned uf_exp = (uf >> 22) & 0xFF;
+  // bit shift exp byte (bits 30,...,23) right; mask with 0xFF (255; ...0011111111)
+  // so that we are left with usigned value of exp
+  unsigned uf_exp = (uf >> 23) & 0xFF;
   
   // check if uf_exp equals 0xFF; if so NaN
+  // this is a special case; by def a binary representation of a float
+  // is NaN if all exp bits = 0xFF (basically, if they're all 1's)
   if (uf_exp == 0xFF) {
     return uf;
   }
 
   // return sign flip by uf xor 100...0
+  // this preserves all other values except the leading sign bit, which it flips
   return uf ^ (1 << 31);
 }
 
@@ -171,15 +175,34 @@ unsigned float_neg(unsigned uf) {
  *   Instructor solution uses 13 ops
  */
 int float_f2i(unsigned uf) {
-  /* TODO: implement this function */
-  // isolate important vals with masking
-  unsigned sign_bit = (uf >> 31) & 0x1;
-  unsigned exp_bits = (1 >> 22) & 0xFF;
-  unsigned frac_bits = uf & 0x7FFFFF;
+  // ASK: rounding?
+  // isolate sign bit, exp bits, and frac bits with masking
+  // declare bias as 127
+  unsigned sign = (uf >> 31) & 0x1;
+  unsigned exp = (uf >> 23) & 0xFF; // ASK: 23 or 22?
+  unsigned frac = uf & 0x7FFFFF;
+  unsigned bias = 0x7F;
 
-  
-  
-  return -1;
+
+  // edge case NaN or infinity; return smallest int
+  // ASK: check if this is only case?
+  if (exp == 0xFF) {
+    return 0x80000000u;
+  }
+
+  // calc E by subtracting bias from exp_bits
+  int e = exp + (~bias + 1);
+
+  // ASK: can i do <, >, -?
+
+  // something about overflow? we can't shift more than 31 places?
+
+  // e is positive; shift left 
+  if ((e >> 31) == 0) {
+    return frac << 2;
+  } else { // case for e is negative?
+    return 0;
+  }
 }
 
 int main() {
@@ -190,10 +213,10 @@ int main() {
   // printf("%d\n", bang(43));
 
   printf("%u\n", float_neg(0)); // yields 2147483648
-  printf("%u\n", float_neg(2147483648)); // yields 0
+  printf("%u\n", float_neg(2147483648)); // yields 0 
   printf("%u\n", float_neg(2147483652)); // yields 4
   printf("%u\n", float_neg(2147483647)); // NaN; yields 2147483647
-  printf("%u\n", float_neg(1069547520)); // NaN; yields 1069547520 (011111111000...)
+  printf("%u\n", float_neg(2139095040)); // NaN; yields 2139095040 (011111111000...)
   
 
   return 0;
