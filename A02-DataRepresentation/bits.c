@@ -175,34 +175,51 @@ unsigned float_neg(unsigned uf) {
  *   Instructor solution uses 13 ops
  */
 int float_f2i(unsigned uf) {
-  // ASK: rounding?
   // isolate sign bit, exp bits, and frac bits with masking
   // declare bias as 127
   unsigned sign = (uf >> 31) & 0x1;
-  unsigned exp = (uf >> 23) & 0xFF; // ASK: 23 or 22?
+  unsigned exp = (uf >> 23) & 0xFF; 
   unsigned frac = uf & 0x7FFFFF;
   unsigned bias = 0x7F;
+  int final = frac;
 
-
-  // edge case NaN or infinity; return smallest int
-  // ASK: check if this is only case?
+  // edge case NaN or infinity; return 0x80000000u
   if (exp == 0xFF) {
     return 0x80000000u;
   }
 
-  // calc E by subtracting bias from exp_bits
-  int e = exp + (~bias + 1);
-
-  // ASK: can i do <, >, -?
-
-  // something about overflow? we can't shift more than 31 places?
-
-  // e is positive; shift left 
-  if ((e >> 31) == 0) {
-    return frac << 2;
-  } else { // case for e is negative?
-    return 0;
+  // edge case if exp < bias; return 0 since float < 1 
+  if (exp < bias) {
+    return 0x0;
   }
+
+  // calc E by subtracting bias from exp_bits
+  // unsigned okay bc guaranteed that exp >= bias by above if clause
+  unsigned e = exp - bias;
+
+  // edge case where large E results in overflow; return 0x80000000u
+  // checking for geq 31 because the MSB should be reserved for sign
+  if (e >= 31) {
+    return 0x80000000u;
+  }
+
+  // e is very positive; shift left for larger number
+  if (e > 22) {
+    final = frac << (e - 23);
+  } else { 
+    final = frac >> (23 - e);
+  }
+
+  // add extra 1 bit to left side of integer 
+  // doing this because fractional represents decimal, not 1 + decimal
+  final = final + (1 << e);
+
+  // if sign bit is 1 (negative), negate return int
+  if (sign) {
+    final = -final;
+  }
+
+  return final;
 }
 
 int main() {
@@ -212,12 +229,18 @@ int main() {
   // printf("%d\n", bang(-5));
   // printf("%d\n", bang(43));
 
-  printf("%u\n", float_neg(0)); // yields 2147483648
-  printf("%u\n", float_neg(2147483648)); // yields 0 
-  printf("%u\n", float_neg(2147483652)); // yields 4
-  printf("%u\n", float_neg(2147483647)); // NaN; yields 2147483647
-  printf("%u\n", float_neg(2139095040)); // NaN; yields 2139095040 (011111111000...)
-  
+  // printf("%u\n", float_neg(0)); // yields 2147483648
+  // printf("%u\n", float_neg(2147483648)); // yields 0 
+  // printf("%u\n", float_neg(2147483652)); // yields 4
+  // printf("%u\n", float_neg(2147483647)); // NaN; yields 2147483647
+  // printf("%u\n", float_neg(2139095040)); // NaN; yields 2139095040 (011111111000...)
+
+  printf("%d\n", float_f2i(0x1FC00000)); // input 0; yields 0
+  printf("%d\n", float_f2i(0x41200000)); // input 10; yields 10
+  printf("%d\n", float_f2i(0x412E6666)); // input 10.9; yields 10
+  printf("%d\n", float_f2i(0xC12E6666)); // input -10.9; yields -10
+  printf("%d\n", float_f2i(0x4470B1EB)); // input 962.8; yields 962
+  printf("%d\n", float_f2i(0xC82C3D15)); // input -176372.34; yields -176372
 
   return 0;
 }
