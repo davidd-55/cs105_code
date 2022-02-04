@@ -146,6 +146,10 @@ int isPower2(int x) {
  *   Instructor solution uses 5 ops
  */
 unsigned float_neg(unsigned uf) {
+  // For float_neg we isolated the exp representation bits, checked if they were all 1's
+  // (and returned uf if so), then performed a sign flip with uf xor tmin. More detail can be
+  // found in the inline code comments.
+
   // bit shift exp byte (bits 30,...,23) right; mask with 0xFF (255; ...0011111111)
   // so that we are left with usigned value of exp
   unsigned uf_exp = (uf >> 23) & 0xFF;
@@ -175,6 +179,12 @@ unsigned float_neg(unsigned uf) {
  *   Instructor solution uses 13 ops
  */
 int float_f2i(unsigned uf) {
+  // For float_f2i, we first isolated the sign, exp, and frac bits. Then, we 
+  // checked for NaN (exp all 1's) edge case, the overflow (exp - bias >= 31) edge case, and the
+  // |uf| < 1 (exp < bias) edge case and returned appropriate values for each. Finally, we bit shifted
+  // an integer containing only the frac bits left or right depending on the value of E, preserved the sign,
+  // and returned the resulting value. More detail can be found in the inline code comments.
+
   // isolate sign bit, exp bits, and frac bits with masking
   // declare bias as 127
   unsigned sign = (uf >> 31) & 0x1;
