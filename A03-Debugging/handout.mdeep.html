@@ -1,0 +1,355 @@
+<meta charset="utf-8" lang="en">
+
+**Assignment 03: Debugging with GDB**
+
+The purpose of this lab is to introduce you to the GDB debugger and to give you practice using this debugger to read, run, and debug programs in C and assembly. As with future labs, you should work in teams of two. This assignment will need to be completed on the course VM.
+
+# Learning Goals
+
+- Learn how to use GDB
+- Learn more about the C language and the command line interface
+
+# Grading Walk-Throughs
+
+This assignment will be graded as pass/needs-revisions by a TA. To pass the assignment, you must
+
+1. Complete the assignment and submit your work to gradescope.
+	- You should start this assignment in class on the day shown on the calendar.
+	- **Complete the assignment as early as possible**.
+
+2. Schedule a time to meet with a TA prior to the deadline.
+	- You must book a time to meet with a TA
+	- Sign-up on the Google Sheet **with at least 36 hours of notice**.
+	- Contact your TA on Slack after signing-up.
+	- All partners must meet with the TA. If you can't all make it at the same time, then each of you needs to schedule a time to meet with the TAs.
+
+3. Walk the TA through your solutions prior to the deadline.
+	- Walk-throughs should take no more than 20 minutes.
+	- You should be well prepared to walk a TA through your answers.
+	- You may not make any significant corrections during the walk-through. You should plan on making corrections afterward and scheduling a new walk-through time. Mistakes are expected--nobody is perfect.
+	- You must be prepared to explain your answers and justify your assumptions. TAs do not need to lead you to the correct answer during a walk-through--this is best left to a mentor session.
+
+4. The TA will then either
+	- mark your assignment as "pass" on gradescope, or
+	- mark your assignment as "needs-revisions" and inform you that you have some corrections to make.
+
+5. If corrections are needed, then you will need to complete them and then schedule a new time to meet with the TA.
+		- You will ideally complete any needed revisions by the end of the day the following Monday
+
+If you have concerns about the grading walk-through, you can meet with me after you've first met with a TA.
+
+# Overview
+
+The materials for the data lab are available on the course web page and on the course VM. To start, you should
+
+- connect to the Pomona VPN (if needed), 
+- `ssh` into `itbdcv-lnx04p.campus.pomona.edu`, and 
+- then grab and extract the starter code.
+
+(You can take a look at the [animation from the previous assignment](https://cs.pomona.edu/classes/cs105/assignments/A02-DataRepresentation/handout.mdeep.html#overview) for some help on using these commands.)
+
+# Part 1: Data Representations in the Debugger
+
+C has a commandline debugger called [GDB (GNU Debugger)](https://en.wikipedia.org/wiki/GNU_Debugger). I hope you learn to love GDB this semester; it is incredibly powerful. For your first problem, you will use GDB to look at data at the bit- and byte-level.
+
+Before we get started, open the file `part1.c` and take a look. This file contains three `static` constants and a short `main` function. The function is only there so that the program will compile; in this problem we are only concerned with the data declared above the function. Compile the code using the Makefile ("`make part1`" or "`make`"). Note that we are compiling this program with the debugger flag `-g`. This is important for getting anything useful out of GDB.
+
+Go to [gradescope.com/](https://www.gradescope.com/) and type your responses to the questions you find in this assignment.
+
+To get started, run your compiled program in GDB using the command:
+
+~~~bash
+gdb part1
+~~~
+
+## print
+
+GDB provides you lots of ways to look at memory. For example, the command `print` will print the value in a variable. Type
+
+~~~bash
+print puzzle1
+~~~
+
+What is printed? Note that you can explicitly tell GDB how to interpret bytes in memory by adding a `/` after the command `print` (or its shortcut `p`) followed by a format. What do you get when you try "`p/x puzzle1`"? Is that more edifying? Note: for future references, there are several other format you can use: `x, d, u, o, t, a, c, f` (see GDB Quick Reference on the course website for details).
+
+## examine
+
+So far, you've looked at `puzzle1` in decimal and hex. There's also a way to treat it as a string. Strings are just arrays of characters, and a "string" variable really only stores the address of (aka. a pointer to) the first character. To interpret `puzzle1` as a string, we need a way to look at (and interpret) the bytes in memory at address `&puzzle1` (where "`&`" symbol means "address of").
+
+The "`x`" (e`x`amine) command lets you look at arbitrary memory in a variety of formats and notations. This command takes three "arguments" after a `/`:
+
+1. the number of units you want to interpret, 
+2. the size of each unit (b = one byte, h = 2 bytes, w = 4 bytes, g = 8 bytes), and 
+3. the format you want to interpret each unit in (same format options as for `print` plus `s` and `i`).
+
+For example, "`x/1bx`" examines 1 unit of one byte interpreted as a hexadecimal value. Let's give this a try. Type
+
+~~~bash
+x/4bx &puzzle1
+~~~
+
+How does the output you see relate to the result of "`p/x puzzle1`"? (Incidentally, you can look at any arbitrary memory location with `x`, as in "`x/1wx 0x8048500`".)
+
+
+## puzzle1
+
+OK, that was interesting (and maybe a bit weird), but we still cannot interpret `puzzle1`. Based on what you know so far about GDB and about how value are represented, what is the human-friendly value of `puzzle1`?
+
+*Hint:* Although `puzzle1` is declared as an `int`, it's not. But on our machine an `int` is 4 bytes, and those bytes could be interpreted as a different value of some other type.
+
+*Hint:* The most efficient way to do this is probably to examine `puzzle1` with various forms of the `x` command. For example, you might try "`x/16i &puzzle1`" to display the bytes of memory starting at `&puzzle1` interpreted as a sequence of 16 assembly instructions.
+
+*Hint:* If you need help, GDB has help built in. Type "`help x`" to see more information about the options for the examine command.
+
+## puzzle2
+
+Now we can move on to `puzzle2`. It pretends to be an *array* of `int`s, but you might suspect that it isn't. Using your newfound skills, discover its human-friendly value.
+
+*Hint:* Since there are two `int`s, the entire value occupies 8 bytes.
+
+## puzzle3
+
+We have one puzzle left. What is stored in `puzzle3`?
+
+# Part 2: Running Code in GDB
+
+Make sure to build the executables for both parts now, running
+
+~~~bash
+make part2
+~~~
+
+`part2.c` contains a function that has a small `while` loop, and a simple `main` that calls it. Study the `loop_while` function to understand how it works. It will be useful to know what the `atoi` function (pronounced "a to i") does. Type "`man atoi`" in a terminal window to find out.
+
+Run `gdb part2` and
+
+1. set a breakpoint in `main` by typing "`b main`",
+2. tell GDB not to debug the `atoi` function by typing "`skip atoi`", and then
+3. run the program by typing "`r`" or "`run`".
+
+The program will stop in `main`.
+
+Now answer the following questions on gradescope.
+
+## continue
+
+Type "`c`" (or "`continue`") to continue past the breakpoint. What	happens?
+
+## backtrace
+
+Type "`bt`" (or "`backtrace`") to get a trace of the call stack and find out how you got where you are. Run "`up 3`" to go up the call stack. What file and line number are you on?
+
+In general, you can use `up` and `down` to move up or down one frame in the stack to look at various variables.
+
+## argument
+
+Usually when bad things happen in standard library code it's your fault, not the library's. In this case, the problem is that `main` passed a bad argument to `atoi`. There are two ways to find out what the bad argument is: look at `atoi`'s stack frame (more on this next week!), or print the argument.
+
+Rerun the program by typing "`r`" and let it stop at the breakpoint. Note that `atoi` is called with the argument "`argv[1]`", you can find out the value that was passed to `atoi` with the command "`print argv[1]`". What is printed?
+
+Why do you think the program segfaulted?
+
+## output
+
+Rerun the program with an argument of 5 by typing "`r 5`", and then continue from the the breakpoint. What does the program print?
+
+## arguments
+
+**Without restarting GDB**, type "`r`" (without any further parameters) to run the program yet again. (If you restarted `gdb`, you'll need to recreate the breakpoint and rerun the run command with the argument "5".)
+
+At the breakpoint, examine the variables `argc` and `argv` by using the `print`	command. For example, type "`print argv[0]`." Also try "`print argv[0]@argc`", which is `gdb`'s notation for saying "print elements of the `argv` array starting at element 0 and continuing for `argc` elements."
+
+What is the value of `argc`? What are the elements of the `argv` array? Where did they come from, given that you didn't add anything to the `run` command?
+
+## stepping
+
+The `step` or `s` command is a useful way to follow a program's 	execution one line at a time. Type "`s`". Where do you wind up?
+
+## listing
+
+GDB always shows you the line that is about to be executed. Sometimes it's useful to see some context. Type "`list`". What lines do you see? Hit the return key. What do you see now?
+
+## enter
+
+Enter "`s`" to step to the next line. Then hit the return key three times. What do you think the return key does?
+
+## values
+
+What are the current values of `result`, `a`, and `b`?
+
+Type "`quit`" to exit GDB. (You'll have to tell it to kill the
+"inferior process", which is the program you are debugging.)
+
+# Part 3: More Control
+
+Look at the file `part3.c` This file contains three functions. Read the functions and figure out what they do.
+
+Here are some hints:
+
+- recall that `argv` is an array containing the strings that were passed to the program on the command line (or from GDB's `run` command)
+- `argc` is the number of arguments that were passed
+- `argv[0]` is the name of the program, so `argc` is always at least 1
+- `malloc` allocates a variable-sized array big enough to hold `argc` integers (which is slightly wasteful, since we only store `argc-1` integers there, but `¯\_(ツ)_/¯`)
+
+## starting
+
+Now,
+
+1. Open `part3` in GDB. 
+2. Set a breakpoint in `fix_array`. 
+3. Run the program with the arguments `1 1 2 3 5 8 13 21 44 65`.
+4. Print `a_size` and verify that it is 10. 
+
+Did you really need to use a `print` command to find the value of `a_size`? (**Hint:** look	carefully at the output produced by `gdb`.)
+
+What is the value of `a`?
+
+## display
+
+Next,
+
+1. Type "`display a`" to tell GDB that it should display `a` every time you stop.
+2. Step six times. 
+
+You'll notice that one of the lines executed is a right curly brace; this is common when you're in GDB and often indicates the end of a loop or the return from a function.
+
+After returning, what is the value of `a`?
+
+## step again
+
+Step again (a seventh time). What are the values of `a` and `i` now?
+
+## stepping over
+
+At this point you should (again) be at the call to `hmc_pomona_fix`. You already know what that function does, and stepping through it is a bit of a pain. The authors of debuggers are aware of that fact, and they always provide two ways to step line-by-line through a program. 
+
+1. `step` (the one we've been using) is traditionally referred to as "step into"---if you are at the point of a function call, you move stepwise *into* the function being called.
+
+2. `next` (traditionally called "step over") operates just like `step`, but if you are at a function call it does the whole function just as if it were a single line.
+
+Type `next` (or just `n`). What line do we wind up at? (Incidentally, in GDB as in most debuggers, the line shown is the *next* line to be executed.)
+
+## repeating `next`
+
+Use `n` to step past that line, verifying that it works just like `s` when you're not at a function call. What's `a` now?
+
+## checking the value
+
+It's often useful to be able to follow pointers. GDB is unusually smart in this respect; you can type complicated expressions like "`p *a.b->c[i].d->e`", where
+
+- `*` dereferences a pointer
+- `.` symbol access a field in a struct, and 
+- `x->y` is a shortcut for `(*x).y`
+
+By this point, we have kind of lost track of `a`, and we just want to know what it's pointing at. Type "`p *a`". What do you get?
+
+## stepping multiple lines
+
+Often when debugging, you know that you don't care about what happens in the next three or twelve lines. You could type "`s`" or "`n`" that many times, but we're computer scientists, so we might prefer to avoid doing work that computers could do for us---especially mentally taxing tasks like counting to twelve.
+
+So, type "`next 12`". What line are you at?
+
+What is the value of `a` now?
+
+What is the value pointed to by `a`?
+
+# Part 3 Assembly: Assembly-level Debugging
+
+Usually you will be able to debug your programs using only the C source code, but sometimes it's necessary to inspect the assembly code. For this part, we will again use the program `part3.c` from the previous problem. To be sure we're all on the same page, assemble that program using the Makefile ("`make part3asm`") and debug it up with "`gdb part3asm`".
+
+## breakpoint
+
+Now, 
+
+1. set a breakpoint at `main`, and then
+2. run the program with arguments of `1 42 2 47 3`.
+
+Where does it stop? 
+
+Type "list" to see what's nearby, then type "`b 29`" and "`c`".
+
+Where does it stop now?
+
+## disassem
+
+Since we're at the start of the loop, typing "`c`" should take you to the next iteration, right? Type "`c`".
+
+Oops. Good thing we can start over by just typing "`r`", which you should do now.
+
+But why, if we're in the `for` statement, didn't it stop the second time? Continue past that first breakpoint to the second one at the start of the loop. 
+
+Type "`info b`" (or "`info breakpoints`" for the terminally verbose). Lots of good stuff there. The important thing is in the "address" column. Take note of the address given for breakpoint 2, and then type "`disassem main`". You'll note that there's a helpful little arrow right at breakpoint 2's address, since that's the instruction we're about to execute.
+
+You should be looking at some assembly that matches the following:
+
+~~~asm
+movl   $0x1,-0x14(%rbp)
+~~~
+
+This line is initializing the variable `i` with the value `1`.
+
+## assembly breakpoints
+
+The code at `+44` jumps to `main+105`, which has a few instructions that jump back to `main+46`. This is all part of the loop pattern that we will discuss in class (in this case, a `for`).
+
+We've successfully breaked ("broken?" "Set a breakpoint?") at the initialization of the loop. But we'd like to have a breakpoint *inside* the for loop, so we could stop on every iteration. The jump to `main+46` tells us that we want to stop there. But that's not a source line; it's in the middle clause of the `for` statement.
+
+No worries, though, because GDB will let us set a breakpoint on *any* instruction even if it's in the middle of a statement. Just type "`b *(main+46)`" or "`b *0x400677`" (assuming that's the address of `main+46`, as it was when I wrote these instructions).
+
+The asterisk tells `gdb` to interpret the rest of the command as an address in memory, as opposed to a line number in the source code. What does "`info b`" tell you about the line number you chose?
+
+(Fine, we could have just set a breakpoint at that line. But there are more complicated situations where there isn't a simple line number, so it's still useful to know about the asterisk.)
+
+## ignoring breakpoints
+
+We can look at the current values of the array by typing "`p array[0]@argc`". But the current value isn't interesting. We could type "`c`" over and over, but that is tedious (especially if you need to do it 10,000 times!). So instead, try the following
+
+1. restart with "`r`"
+2. continue and hit the line 29 breakpoint with "`c`"
+3. now type "`c 4`" to ignore the next three breakpoints
+
+Now what are the contents of `array`?
+
+## breakpoint management
+
+Perhaps we wish we had done "`c 3`" instead of "`c 4`". We can rerun the program, but we really don't need all the breakpoints; we're only working with breakpoint 3. Type "`info b`" to find out what's going on right now. Then use "`d 1`" or "`delete 1`" to completely get rid of breakpoint 1. But maybe breakpoint 2 will be useful in the future, so type "`disable 2`". Use "`info b`" to verify that it's no longer enabled ("Enb").
+
+Continue past breakpoint 3, where we're stopped. Where do we stop next?
+
+## registers
+
+Sometimes, instead of stepping through a program line by line, we want to see what the individual instructions do. 
+
+1. Quit `gdb` and restart it again with `part3asm`.
+2. Set a breakpoint at `fix_array`.
+3. Run the program with arguments of `1 42 2 47 3`. 
+
+Type "`info registers`" to see all the processor registers in both hex and decimal.
+
+## printing assembly
+
+In question 1, we looked at lots of different ways to interpret data, but there is one that we didn't use: `x/i`. I particularly like "`x/16i $rip`". Try this command: what do you see? Compare that to the result of "`disassem fix_array`".
+
+## stepi
+
+We mentioned stepping by instructions. That's done with "`stepi`" ("step one instruction"). Type that now, and note that `gdb` gives a new instruction address when you type "`disassem fix_array`", but still says that you're in the for loop.
+
+Hit return to `stepi` again, and keep hitting return until the displayed line **doesn’t** contain a hexadecimal instruction	address.
+
+At what line are you on now?
+
+And now you know (maybe) everything you need to know about debugging with GDB!
+
+# Submitting Your Assignment
+
+You will submit your code and/or responses on gradescope. **Only one partner should submit.** The submitter will add the other partner through the gradescope interface.
+
+To pass the autograder (if one exists for this assignment), your output must exactly match the expected output. Your program output should be similar to the example execution above, and the autograder on gradescope will show you the correct output if yours is not formatted properly. You can use [text-compare](https://text-compare.com/) to compare your output to the expected output and that should give you an idea if you have a misspelled word or extra space (or if I do).
+
+Additional details for using gradescope can be found here:
+
+- [Submitting an Assignment](https://help.gradescope.com/article/ccbpppziu9-student-submit-work)
+- [Adding Group Members](https://help.gradescope.com/article/m5qz2xsnjy-student-add-group-members)
+- [gradescope Student Help Center](https://help.gradescope.com/category/cyk4ij2dwi-student-workflow)
+
+<!-- Markdeep: --><script>window.markdeepOptions = {tocStyle: 'long'};</script><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://morgan3d.github.io/markdeep/latest/markdeep.min.js" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
