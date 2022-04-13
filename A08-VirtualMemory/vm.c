@@ -14,17 +14,25 @@ typedef struct page_table_entry {
   int frame_number; // physical frame number
   int valid;        // denotes validity of page
   // TODO: add member for LRU time usage marker
+  unsigned long lru_marker;
 } page_table_entry_t;
 
 // Global constants defining VM characteristics
 // I recommend testing with (uncomment these three lines and comment
 // the lines below).
-//   const int PAGE_SIZE = 16;
-//   const int PHYSICAL_MEMORY_SIZE = 64;
-//   const int VIRTUAL_MEMORY_SIZE = 128;
+// const int PAGE_SIZE = 16;             // 16 B = 2^4 bytes
+// const int PHYSICAL_MEMORY_SIZE = 64;  // 64 B = 2^6 bytes
+// const int VIRTUAL_MEMORY_SIZE = 128;  // 128 B = 2^7 bytes
 const int PAGE_SIZE = 4096;              // 4 KB = 2^12 bytes
 const int PHYSICAL_MEMORY_SIZE = 32768;  // 32 KB = 2^15 bytes
 const int VIRTUAL_MEMORY_SIZE = 1048576; // 1 MB = 2^20 bytes
+
+// Global constants defining offset bit count
+// const int OFFSET_BITS = 4;
+const int OFFSET_BITS = 12;
+
+// Global constant for max unsigned long 
+const unsigned long ULONG_MAX = 0xFFFFFFFFFFFFFFFF;
 
 // Global simulation "constants" set in main
 int INT_SIZE;
@@ -40,6 +48,7 @@ long num_accesses;
 int strategy;
 
 // TODO: add global marker for updating page LRU counters
+int use_marker;
 
 // Initialize a "data" array with random numbers
 int *gen_array(int n) {
@@ -102,10 +111,11 @@ void initialize(int *data, int n) {
       // Add valid page table entry
       entry_ptr->frame_number = page_num;
       entry_ptr->valid = 1;
-
       // TODO: initialize entry for LRU marker
+      entry_ptr->lru_marker = use_marker;
 
       // TODO: update global LRU marker
+      use_marker++;
 
     } else {
       // Add invalid page table entry
@@ -140,7 +150,22 @@ void initialize(int *data, int n) {
 // Convert a virtual address into a physical addres using the page table
 physical_addr translate_addr(virtual_addr virt_addr) {
   // TODO #1: implement this function
-  physical_addr phys_addr = NULL;
+  physical_addr phys_addr;
+
+  // Convert virtual address into a page number
+  int loaded_page_number = virt_addr / PAGE_SIZE;
+
+  // Calculate offset from virtual address, page size, and page number
+  int loaded_offset = virt_addr - (PAGE_SIZE * loaded_page_number);
+
+  // Compute the page entry from the page number
+  page_table_entry_t *loaded_entry_ptr = page_table + loaded_page_number;
+  if (loaded_entry_ptr->valid == 0) {
+    phys_addr = -1;
+  } else {
+    // calculate physical address as frame number left shifted then add offset
+    phys_addr = (loaded_entry_ptr->frame_number << OFFSET_BITS) + loaded_offset; 
+  }
 
   return phys_addr;
 }
@@ -154,7 +179,7 @@ void handle_page_fault(virtual_addr virt_addr) {
   //
   // Step 1: Select page to evict
   //
-
+  
   if (strategy == RANDOM) {
 
     // Loop until we find an invalid page
@@ -164,8 +189,29 @@ void handle_page_fault(virtual_addr virt_addr) {
     } while (evicted_entry_ptr->valid == 0);
 
   } else if (strategy == LRU) {
-
     // TODO #2: implement this page eviction strategy
+    // initialize least recently used as highest possible (most recent possible) val
+    int curr_page_num = 0;
+    unsigned long curr_lru = ULONG_MAX;
+
+    // loop through page table
+    do {
+      // get current page ptr
+      page_table_entry_t *curr_page_ptr = page_table + curr_page_num;
+
+      // if page lru val < least val so far, update page to evict
+      if (curr_page_ptr->lru_marker < curr_lru) {
+        // update page to evict
+        evicted_page_number = curr_page_num;
+        evicted_entry_ptr = curr_page_ptr;
+
+        // update current least recently used
+        curr_lru = curr_page_ptr->lru_marker;
+      }
+
+      // increment page count
+      curr_page_num++;
+    } while (curr_page_num < NUM_PAGES);
 
   } else {
 
@@ -476,6 +522,7 @@ int main(int argc, char **argv) {
   physical_memory = (byte *)malloc(PHYSICAL_MEMORY_SIZE);
 
   // TODO: initialize global LRU marker
+  use_marker = 0;
 
   evaluate();
 
