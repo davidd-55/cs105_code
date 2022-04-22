@@ -164,7 +164,9 @@ physical_addr translate_addr(virtual_addr virt_addr) {
     phys_addr = -1;
   } else {
     // calculate physical address as frame number left shifted then add offset
-    phys_addr = (loaded_entry_ptr->frame_number << OFFSET_BITS) + loaded_offset; 
+    phys_addr = (loaded_entry_ptr->frame_number << OFFSET_BITS) + loaded_offset;
+    loaded_entry_ptr->lru_marker = use_marker;
+    use_marker ++; 
   }
 
   return phys_addr;
@@ -199,8 +201,8 @@ void handle_page_fault(virtual_addr virt_addr) {
       // get current page ptr
       page_table_entry_t *curr_page_ptr = page_table + curr_page_num;
 
-      // if page lru val < least val so far, update page to evict
-      if (curr_page_ptr->lru_marker < curr_lru) {
+      // if page lru val < least val so far AND it's valid, update page to evict
+      if ((curr_page_ptr->lru_marker < curr_lru) && (curr_page_ptr->valid != 0)) {
         // update page to evict
         evicted_page_number = curr_page_num;
         evicted_entry_ptr = curr_page_ptr;
