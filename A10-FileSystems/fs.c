@@ -300,7 +300,7 @@ int search_dir(inode_number dir_inum, char *filename) {
 
   // TODO(Task 4): extend this to support the general case
   // indirect search only if block entries remain
-  if (block_entries > 0) {
+  if (entries_left > 0) {
     // inum not found in direct case; it's -1, so run indirect search
     file_inum = search_dir_indirect(dest.indirect_ptr, filename, entries_left);
 
